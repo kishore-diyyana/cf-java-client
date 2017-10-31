@@ -28,7 +28,7 @@ import org.immutables.value.Value;
 abstract class _Policy {
 
     /**
-     * Source for the Policy
+     * Destination for the Policy
      */
     @JsonProperty("destination")
     abstract Destination getDestination();

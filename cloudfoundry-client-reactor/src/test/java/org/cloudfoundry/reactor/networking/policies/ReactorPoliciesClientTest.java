@@ -45,7 +45,7 @@ public final class ReactorPoliciesClientTest extends AbstractNetworkingApiTest {
     public void create() {
         mockRequest(InteractionContext.builder()
             .request(TestRequest.builder()
-                .method(POST).path("/v1/external/policies")
+                .method(POST).path("/policies")
                 .payload("fixtures/networking/policies/POST_request.json")
                 .build())
             .response(TestResponse.builder()
@@ -91,7 +91,7 @@ public final class ReactorPoliciesClientTest extends AbstractNetworkingApiTest {
     public void delete() {
         mockRequest(InteractionContext.builder()
             .request(TestRequest.builder()
-                .method(POST).path("/v1/external/policies/delete")
+                .method(POST).path("/policies/delete")
                 .payload("fixtures/networking/policies/POST_delete_request.json")
                 .build())
             .response(TestResponse.builder()
@@ -137,7 +137,7 @@ public final class ReactorPoliciesClientTest extends AbstractNetworkingApiTest {
     public void list() {
         mockRequest(InteractionContext.builder()
             .request(TestRequest.builder()
-                .method(GET).path("/v1/external/policies")
+                .method(GET).path("/policies")
                 .build())
             .response(TestResponse.builder()
                 .status(OK)

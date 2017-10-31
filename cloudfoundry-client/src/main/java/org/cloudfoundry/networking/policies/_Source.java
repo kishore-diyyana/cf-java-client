@@ -21,7 +21,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.immutables.value.Value;
 
 /**
- * The payload for Router Group responses
+ * The payload for Policy responses
  */
 @JsonDeserialize
 @Value.Immutable

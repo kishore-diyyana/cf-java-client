@@ -16,6 +16,7 @@
 
 package org.cloudfoundry;
 
+import com.sun.xml.internal.rngom.digested.DPattern;
 import org.cloudfoundry.client.CloudFoundryClient;
 import org.cloudfoundry.client.v2.applications.ApplicationResource;
 import org.cloudfoundry.client.v2.applications.DeleteApplicationRequest;
@@ -65,6 +66,14 @@ import org.cloudfoundry.client.v2.userprovidedserviceinstances.ListUserProvidedS
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.RemoveUserProvidedServiceInstanceRouteRequest;
 import org.cloudfoundry.client.v2.userprovidedserviceinstances.UserProvidedServiceInstanceResource;
 import org.cloudfoundry.client.v2.users.UserResource;
+import org.cloudfoundry.networking.NetworkingClient;
+import org.cloudfoundry.networking.policies.DeletePoliciesRequest;
+import org.cloudfoundry.networking.policies.Destination;
+import org.cloudfoundry.networking.policies.ListPoliciesRequest;
+import org.cloudfoundry.networking.policies.ListPoliciesResponse;
+import org.cloudfoundry.networking.policies.Policy;
+import org.cloudfoundry.networking.policies.Ports;
+import org.cloudfoundry.networking.policies.Source;
 import org.cloudfoundry.uaa.UaaClient;
 import org.cloudfoundry.uaa.clients.DeleteClientRequest;
 import org.cloudfoundry.uaa.clients.ListClientsRequest;
@@ -118,11 +127,14 @@ final class CloudFoundryCleaner {
 
     private final NameFactory nameFactory;
 
+    private final NetworkingClient networkingClient;
+
     private final UaaClient uaaClient;
 
-    CloudFoundryCleaner(CloudFoundryClient cloudFoundryClient, NameFactory nameFactory, UaaClient uaaClient) {
+    CloudFoundryCleaner(CloudFoundryClient cloudFoundryClient, NameFactory nameFactory, NetworkingClient networkingClient, UaaClient uaaClient) {
         this.cloudFoundryClient = cloudFoundryClient;
         this.nameFactory = nameFactory;
+        this.networkingClient = networkingClient;
         this.uaaClient = uaaClient;
     }
 
@@ -139,6 +151,7 @@ final class CloudFoundryCleaner {
                 cleanGroups(this.uaaClient, this.nameFactory),
                 cleanIdentityProviders(this.uaaClient, this.nameFactory),
                 cleanIdentityZones(this.uaaClient, this.nameFactory),
+                cleanNetworkingPolicies(this.networkingClient, this.nameFactory), //TODO: Reinstate with conditionality
                 cleanRoutes(this.cloudFoundryClient, this.nameFactory),
                 cleanSecurityGroups(this.cloudFoundryClient, this.nameFactory),
                 cleanServiceBrokers(this.cloudFoundryClient, this.nameFactory),
@@ -275,6 +288,33 @@ final class CloudFoundryCleaner {
                     .identityZoneId(zone.getId())
                     .build())
                 .doOnError(t -> LOGGER.error("Unable to delete identity zone {}", zone.getName(), t))
+                .then());
+    }
+
+    private static Flux<Void> cleanNetworkingPolicies(NetworkingClient networkingClient, NameFactory nameFactory) {
+        return networkingClient.policies()
+            .list(ListPoliciesRequest.builder()
+                .build())
+            .flatMapIterable(ListPoliciesResponse::getPolicies)
+            .filter(policy -> nameFactory.isPort(policy.getDestination().getPorts().getStart()))
+            .filter(policy -> nameFactory.isPort(policy.getDestination().getPorts().getEnd()))
+            .flatMap(policy -> networkingClient.policies()
+                .delete(DeletePoliciesRequest.builder()
+                    .policy(Policy.builder()
+                        .destination(Destination.builder()
+                            .id(policy.getDestination().getId())
+                            .ports(Ports.builder()
+                                .end(policy.getDestination().getPorts().getEnd())
+                                .start(policy.getDestination().getPorts().getStart())
+                                .build())
+                            .protocol(policy.getDestination().getProtocol())
+                            .build())
+                        .source(Source.builder()
+                            .id(policy.getSource().getId())
+                            .build())
+                        .build())
+                    .build())
+                .doOnError(t -> LOGGER.error("Unable to delete networking policy between {} and {}", policy.getSource().getId(), policy.getDestination().getId(), t))
                 .then());
     }
 

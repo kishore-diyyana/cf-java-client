@@ -14,25 +14,22 @@
  * limitations under the License.
  */
 
-package org.cloudfoundry.networking.policies;
+package org.cloudfoundry.networking;
 
-import org.cloudfoundry.Nullable;
-import org.cloudfoundry.QueryParameter;
-import org.immutables.value.Value;
+import org.cloudfoundry.AbstractIntegrationTest;
+import org.cloudfoundry.routing.v1.routergroups.ListRouterGroupsRequest;
+import org.cloudfoundry.routing.v1.routergroups.ListRouterGroupsResponse;
+import org.cloudfoundry.routing.v1.routergroups.RouterGroup;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import reactor.test.StepVerifier;
 
-import java.util.List;
+import java.time.Duration;
+import java.util.concurrent.TimeoutException;
 
-/**
- * The request payload for the List Policies operation
- */
-@Value.Immutable
-abstract class _ListPoliciesRequest {
+public final class TagsTest extends AbstractIntegrationTest {
 
-    /**
-     * Policy group ids to filter on
-     */
-    @Nullable
-    @QueryParameter("id")
-    abstract List<String> getPolicyGroupIds();
+    @Autowired
+    private NetworkingClient networkingClient;
 
 }
